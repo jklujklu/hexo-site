@@ -3,6 +3,27 @@ var Home = location.href,
     xhr,
     xhrUrl = '';
 
+// 创建媒体查询列表对象
+var mql = window.matchMedia("(orientation: portrait)");
+// 添加监听器
+mql.addListener(handleOrientationChange);
+// 在当前状态下调用一次监听函数，更新当前媒体查询的结果，防止当前状态与开发者默认的状态不一致
+handleOrientationChange(mql);
+// 创建监听函数
+function handleOrientationChange(mql) {
+  if (mql.matches) {
+    /* The viewport is currently in portrait orientation */
+console.log('portrait orientation');
+$('#cover').attr('src','/img/bgg.jpeg');
+$('#cover').attr('height',1920);
+$('#cover').attr('width',1080);
+  } else {
+console.log('landscape orientation');
+$('#cover').attr('src','/img/welcome-cover.jpg');
+$('#cover').attr('height',1080);
+$('#cover').attr('width',1920);
+  }
+}
 var Diaspora = {
     L: function(url, f, err) {
         if (url == xhrUrl) {
