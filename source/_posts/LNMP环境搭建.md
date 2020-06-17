@@ -5,8 +5,6 @@ categories:
     - 教程
 tags: 
     - LNMP
-mp3: http://m7.music.126.net/20200615162801/a906800a4eff3d0e0efc1123b4973313/ymusic/870b/ad32/3709/aef735503eb694409ad48e3312f3e752.mp3
-cover: http://api.mtyqx.cn/tapi/random.php
 ---
 # LNMP环境搭建
 

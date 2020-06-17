@@ -11,19 +11,89 @@ mql.addListener(handleOrientationChange);
 handleOrientationChange(mql);
 // 创建监听函数
 function handleOrientationChange(mql) {
-  if (mql.matches) {
-    /* The viewport is currently in portrait orientation */
-console.log('portrait orientation');
-$('#cover').attr('src','/img/bgg.jpeg');
-$('#cover').attr('height',1920);
-$('#cover').attr('width',1080);
-  } else {
-console.log('landscape orientation');
-$('#cover').attr('src','/img/welcome-cover.jpg');
-$('#cover').attr('height',1080);
-$('#cover').attr('width',1920);
-  }
+    if (mql.matches) {
+        /* The viewport is currently in portrait orientation */
+        $('#cover').attr('src','/img/cover_mobile.jpeg');
+        $('#cover').attr('height',1920);
+        $('#cover').attr('width',1080);
+    } else {
+        $('#cover').attr('src','/img/background/1.jpg');
+        $('#cover').attr('height',1080);
+        $('#cover').attr('width',1920);
+    }
 }
+
+// 获取滚动过的距离
+function getScrollTop(){
+    return document.documentElement.scrollTop || document.body.scrollTop;
+}
+// 获取元素与页面顶端的距离
+function getElementToPageTop(el) {
+  if(el.parentElement) {
+    return this.getElementToPageTop(el.parentElement) + el.offsetTop
+  }
+  return el.offsetTop
+}
+// 是否进行等待
+var waiting = false;
+// 获取视窗高度
+var innerHeight = window.innerHeight;
+// 存放下一个需要预加载的元素索引
+var lazyPoint = 0;
+// 获取所有需要预加载的元素，返回NodeList元素
+var imgs = document.querySelectorAll('.lazyload-item');
+// NodeList转换为数组
+var items = converToArray(imgs);
+// 是否点击了下一页，是否需要主动更新图片
+var nextPage = false;
+
+// NodeList转换为数组
+function converToArray(nodes) {
+    var array = null;
+    try {
+        array = Array.prototype.slice.call(nodes, 0); //针对非IE浏览器
+    } catch (ex) {
+        array = new Array();
+        for (var i = 0, len = nodes.length; i < len; i++) {
+            array.push(nodes[i]);
+        }
+    }
+    return array;
+}
+// 预加载
+function lazyload(scrollTop){
+    if(nextPage){
+    	items = converToArray(document.querySelectorAll('.lazyload-item')).splice(lazyPoint+1);
+    	nextPage = false;
+    }
+    let lazyloadItems = items.concat();
+    if(lazyloadItems.length == 0){
+        console.log("nothing need to load!");
+        return;
+    }
+    // 遍历元素，每次从index指针所在位置开始
+    for (let i=0 ;i<lazyloadItems.length;i++){
+        // 获取当前元素的img标签
+        let img = lazyloadItems[i]
+        // 获取当前元素顶部与HTML顶部的距离
+        let itemOffsetTop = getElementToPageTop(img);
+        // 当（元素与顶部距离）小于（页面滚动过的距离与视窗高度的和）时，说明当前元素已处于可视范围
+        // 此时将其显示
+        if (itemOffsetTop <= innerHeight + scrollTop){
+            // 如果其src属性不为空，说明此元素之前已被加载过，跳过此元素
+            if (img.getAttribute('src') != "/img/loading.gif"){
+				items.splice(0,1);
+                continue
+            // 否则，更新src属性，加载图片
+            }else{
+                img.setAttribute('src',img.getAttribute('data_src'));
+                // 更新下一个需要预加载的索引
+                lazyPoint = i;
+            }
+        }
+    }
+}
+
 var Diaspora = {
     L: function(url, f, err) {
         if (url == xhrUrl) {
@@ -281,6 +351,9 @@ $(function() {
         Diaspora.PS()
         $('.pview a').addClass('pviewa')
         var T;
+        $(window).on('load',function(){
+            lazyload(0);
+        });
         $(window).on('resize', function() {
             clearTimeout(T)
             T = setTimeout(function() {
@@ -306,6 +379,20 @@ $(function() {
         $('#top').show()
     }
     $(window).on('scroll', function() {
+        // 处于等待状态，直接退出
+        if (waiting){
+            return
+        }
+        // 否则，将其改变为等待状态
+        waiting = true;
+        // 获取已经滚动过的高度
+        let scrollTop = getScrollTop();
+        // 执行预加载
+        lazyload(scrollTop);
+        // 设置延时，0.2s后自动释放资源
+        setTimeout(function(){
+            waiting = false;
+        },100);
         if ($('.scrollbar').length && !Diaspora.P() && !$('.icon-images').hasClass('active')) {
             var wt = $(window).scrollTop(),
                 tw  = $('#top').width(),
@@ -497,6 +584,8 @@ $(function() {
                     $(window).scrollTop(tempScrollTop + 100);
                     Diaspora.loaded()
                     $('html,body').animate({ scrollTop: tempScrollTop + 400 }, 500);
+				    var _this = this;
+				    _this.nextPage = true;
                 }, function() {
                     tag.html('加载更多').data('status', 'loaded')
                 })

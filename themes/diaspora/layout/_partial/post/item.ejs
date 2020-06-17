@@ -1,6 +1,11 @@
 <div class="post">
     <a href="<%- url_for(post.path) %>" title="<%- post.title || "Untitled" %>">
-        <%- image_tag(post.cover || theme.cover[Math.floor(Math.random() * theme.cover.length)], {class: "cover", width: 680, height: 440}) %>
+    	<% if (theme.cover_mode == 'english') { %>
+    		<%- image_tag("/img/loading.gif", {data_src: post.cover || theme.english_cover[Math.floor(Math.random() * theme.english_cover.length)], class: "cover lazyload-item", width: "auto"}) %>
+    	<% }else if(theme.cover_mode == 'dog'){ %>
+    		<%- image_tag("/img/loading.gif", {data_src: post.cover || theme.dog_cover[Math.floor(Math.random() * theme.dog_cover.length)], class: "cover lazyload-item", width: "auto"}) %>
+    	<% } %>
+
     </a>
     <div class="else">
         <p><%- post.date.locale("zh-cn").format("MMMM DD, YYYY") %></p>
