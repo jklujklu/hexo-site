@@ -94,6 +94,12 @@ function lazyload(scrollTop){
     }
 }
 
+var topButton = document.querySelector('.top-button');
+function buttonClick(){
+  let offset = window.innerHeight - 10 - topButton.offsetHeight;
+  topButton.style.transform = 'translatey(-' + offset + 'px)';
+  setTimeout("window.scrollTo({left: 0,top: 0,behavior: 'smooth'})", 500);
+}
 var Diaspora = {
     L: function(url, f, err) {
         if (url == xhrUrl) {
@@ -342,6 +348,7 @@ $(function() {
             if (swatches['Vibrant']) {
                 $('.icon-menu').css('color', swatches['Vibrant'].getHex())
 				$('.icon-search').css('color', swatches['Vibrant'].getHex())
+                $('.top-button').css('color', swatches['Vibrant'].getHex())
             }
         })
         if (!cover.t.attr('src')) {
@@ -393,6 +400,16 @@ $(function() {
         setTimeout(function(){
             waiting = false;
         },100);
+
+        if (getScrollTop() >= window.innerHeight/2){
+            topButton.style.visibility = 'visible';
+            topButton.style.opacity = 1;
+        }else{
+            topButton.style.transform = 'translatey(0px)';
+            topButton.style.visibility = 'hidden';
+            topButton.style.opacity = 0;
+        }
+
         if ($('.scrollbar').length && !Diaspora.P() && !$('.icon-images').hasClass('active')) {
             var wt = $(window).scrollTop(),
                 tw  = $('#top').width(),
