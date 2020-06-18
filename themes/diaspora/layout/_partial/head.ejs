@@ -38,6 +38,16 @@ var description = '';
     <% if (theme.gitalk.enable){ %><%- css(['//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css'])%><%}%>
     <%- css(['css/diaspora.css'])%>
 
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-148714673-1"></script>
+	<script>
+	  window.dataLayer = window.dataLayer || [];
+	  function gtag(){dataLayer.push(arguments);}
+	  gtag('js', new Date());
+
+	  gtag('config', 'UA-148714673-1');
+	</script>
+
     <!- 百度站长统计代码 -!>
     <script>
 		var _hmt = _hmt || [];
