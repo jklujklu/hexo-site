@@ -4,7 +4,7 @@ from api.qqVideo import TencentVideo
 
 app = FastAPI()
 
-ten = TencentVideo('config/tencent.json', '/var/log/web_api/tencent.log')
+ten = TencentVideo()
 
 
 @app.get("/")

@@ -6,7 +6,6 @@ from api.bean.channel import Channel
 from api.bean.response import BaseResponse
 from api.bean.videodetail import VideoDetail, VideoEpisode
 from api.utils.httpUtils import do_get
-from api.utils.logUtils import Logger
 
 
 class TencentVideo:
@@ -22,10 +21,6 @@ class TencentVideo:
 
     MOBILE_API = 'https://m.v.qq.com/x/m/channel/figure/{channel}?pagelet=1&refreshContext=&request=figure&isPagelet=1'
 
-    def __init__(self, config_path, log_path):
-        self.config_path = config_path
-        self.log_path = log_path
-        self.logger = Logger(__name__, self.log_path)
 
     def pc_list_channels(self):
         """
@@ -33,7 +28,6 @@ class TencentVideo:
         :return:    频道列表
         """
 
-        self.logger.info('list channels')
         channels = []
         rs = do_get(self.INDEX)
         dom = BeautifulSoup(rs, 'html.parser')
@@ -140,7 +134,6 @@ class TencentVideo:
         :return:
         """
 
-        self.logger.info('list channels params')
 
         # 变量声明
         params = []  # 所有可用筛选
@@ -195,7 +188,6 @@ class TencentVideo:
         :return:
         """
 
-        self.logger.info('list channel videos')
 
         url = self.LIST_API.format(channel=channel, offset=offset)
         rs = do_get(url, params)
@@ -289,7 +281,6 @@ class TencentVideo:
         :return:
         """
 
-        self.logger.info('list video detail ---> {}'.format(cid))
 
         url = self.VIDEO_INFO_API.format(cid=cid, time=int(time.time() * 1000))
         rs = do_get(url, is_json=True)
@@ -343,7 +334,7 @@ class TencentVideo:
         :return:
         """
 
-        self.logger.info('list video episodes ---> {}'.format(cids))
+        
 
         results = []
         rs = do_get(self.EPISODES_API.format(ids=cids), call_back='QZOutputJson')
@@ -361,7 +352,7 @@ class TencentVideo:
         :param count:   推荐数量
         :return:
         """
-        self.logger.info('list related video ---> {}'.format(cid))
+        
 
         results = {
             'source': cid,
@@ -387,72 +378,3 @@ class TencentVideo:
                 'status': status
             })
         return results
-
-    def get_mobile_recommend(self, channel, params={}):
-        rs = do_get(self.MOBILE_API.format(channel=channel), params=params, is_json=True)
-        dom = BeautifulSoup(rs['html'], 'html.parser')
-        json_str = dom.select('#channel_sync')[0]['value']
-        from urllib.parse import unquote
-        json_str = unquote(json_str)
-        results = {
-            'nextParams': {
-                'key': 'pageContext',
-                'value': ''
-            },
-            'data': []
-        }
-        data_list = json.loads(json_str)['modData']['modList']
-        for data in data_list:
-            video_set = {
-                'title': '',
-                'updateUrl': '',
-                'list': []
-            }
-            try:
-                title = data['cms_data']['title']
-                update = data['cms_data']['op_datakey']
-            except KeyError:
-                title = data['meta']['title']
-                update = data['meta']['op_datakey']
-            if not title:
-                title = 'banner'
-            video_set['title'] = title
-            video_set['updateUrl'] = update.replace('+', '&')
-            videos = data['list']
-            for video in videos:
-                video_set['list'].append({
-                    'cover': video['pic'] if 'pic' in video.keys() else '',
-                    'title': video['title'] if 'title' in video.keys() else '',
-                    'sub_title': video['subtitle'] if 'subtitle' in video.keys() else '',
-                    'duration': video['duration'] if 'duration' in video.keys() else '',
-                    'caption': video['timelong'] if 'timelong' in video.keys() else '',
-                    'cid': video['cid'] if 'cid' in video.keys() else ''
-                })
-            results['data'].append(video_set)
-        next_page = json.loads(json_str)['modData']['pageContext']
-        results['nextParams']['value'] = next_page
-        return results
-
-    def get_mobile_channels(self):
-        all_channels = []
-        rs = do_get(self.MOBILE_API, is_json=True)
-        dom = BeautifulSoup(rs['html'], 'html.parser')
-        json_str = dom.select('#channel_sync')[0]['value']
-        from urllib.parse import unquote
-        json_str = unquote(json_str)
-        print(json_str)
-        channels = json.loads(json_str)['allChannels']['list']
-        for channel in channels:
-            name = channel['channelName']
-            tag = channel['channelTag']
-            if channel['externalLink']:
-                continue
-            all_channels.append({
-                'name': name,
-                'tag': tag,
-                'dataUrl': self.MOBILE_API.format(channel=tag)
-            })
-        return {
-            'count': len(all_channels),
-            'channels': all_channels
-        }
