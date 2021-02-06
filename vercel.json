@@ -6,5 +6,5 @@
       "includeFiles": "qqVideo.py"
     }
   },
-  "routes": [{ "src": "/api", "dest": "api/index.py" }]
+  "routes": [{ "src": "/api/(.*)", "dest": "api/index.py" }]
 }
