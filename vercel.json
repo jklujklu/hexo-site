@@ -3,8 +3,7 @@
     "api/index.py": {
       "includeFiles": "beans/**",
       "includeFiles": "utils/**",
-      "includeFiles": "qqVideo.py",
-       
+      "includeFiles": "qqVideo.py"
     }
   },
   "routes": [{ "src": "/api", "dest": "api/index.py" }]
