@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
-from qqVideo import TencentVideo
+from api.qqVideo import TencentVideo
 
 app = FastAPI()
 

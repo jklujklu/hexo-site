@@ -2,11 +2,11 @@ import json
 import time
 from bs4 import BeautifulSoup
 
-from bean.channel import Channel
-from bean.response import BaseResponse
-from bean.videodetail import VideoDetail, VideoEpisode
-from utils.httpUtils import do_get
-from utils.logUtils import Logger
+from api.bean.channel import Channel
+from api.bean.response import BaseResponse
+from api.bean.videodetail import VideoDetail, VideoEpisode
+from api.utils.httpUtils import do_get
+from api.utils.logUtils import Logger
 
 
 class TencentVideo:
