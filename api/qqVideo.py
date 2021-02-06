@@ -19,12 +19,16 @@ class TencentVideo:
     VIDEO_INFO_CID_API = 'https://node.video.qq.com/x/api/float_vinfo2?cid={cid}&_={time}'
     VIDEO_INFO_VID_API = 'https://union.video.qq.com/fcgi-bin/data?otype=json&tid=682&appid=20001238' \
                          '&appkey=6c03bbe9658448a4&union_platform=1&idlist={ids}&_={time}'
-    PLAYER_URL_API = 'https://vd.l.qq.com/proxyhttp'
+    PLAYER_URL_API = 'http://47.100.56.99:8000/pc/list/player/{vid}'
 
     MOBILE_API = 'https://m.v.qq.com/x/m/channel/figure/{channel}?pagelet=1&refreshContext=&request=figure&isPagelet=1'
 
     def __init__(self):
         pass
+
+    def pc_list_player_url(self, vid):
+        rs = do_get(self.PLAYER_URL_API.format(vid=vid), is_json=True)
+        return rs
 
     def pc_list_channels(self):
         """
@@ -395,3 +399,7 @@ class TencentVideo:
                 'status': status
             })
         return results
+
+if __name__ == '__main__':
+    a = TencentVideo().pc_list_player_url('p00355b45iu')
+    print(json.dumps(a))

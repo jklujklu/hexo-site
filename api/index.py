@@ -46,6 +46,10 @@ def list_video_detail(cids: str):
 def list_video_related(cid: str, count=10):
     return ten.pc_list_related_videos(cid, count=count)
 
+@app.get("/api/pc/list/player/{vid}")
+def list_video_player_url(vid: str):
+    return ten.pc_list_player_url(vid)
+
 
 if __name__ == '__main__':
     uvicorn.run(app=app, host="127.0.0.1", port=8000)
