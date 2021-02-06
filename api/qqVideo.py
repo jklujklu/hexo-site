@@ -16,11 +16,15 @@ class TencentVideo:
     EPISODES_API = 'https://union.video.qq.com/fcgi-bin/data?' \
                    'otype=json&tid=1390&appid=20001986&appkey=12f7ab002d2ca8bf&idlist={ids}'
     RELATE_API = 'https://node.video.qq.com/x/vlikecgi/related_rec?cid={cid}&rec_num={count}&_={time}'
-    VIDEO_INFO_API = 'https://node.video.qq.com/x/api/float_vinfo2?cid={cid}&_={time}'
+    VIDEO_INFO_CID_API = 'https://node.video.qq.com/x/api/float_vinfo2?cid={cid}&_={time}'
+    VIDEO_INFO_VID_API = 'https://union.video.qq.com/fcgi-bin/data?otype=json&tid=682&appid=20001238' \
+                         '&appkey=6c03bbe9658448a4&union_platform=1&idlist={ids}&_={time}'
     PLAYER_URL_API = 'https://vd.l.qq.com/proxyhttp'
 
     MOBILE_API = 'https://m.v.qq.com/x/m/channel/figure/{channel}?pagelet=1&refreshContext=&request=figure&isPagelet=1'
 
+    def __init__(self):
+        pass
 
     def pc_list_channels(self):
         """
@@ -54,11 +58,19 @@ class TencentVideo:
                 href = i.select('.figure')[0]['href']
                 # print(href)
                 import re
-                pattern = re.compile(r'/x/.+/(.+)/(.+)')
-                if pattern.search(href):
-                    vid = pattern.findall(href)[0][0]
-                else:
-                    vid = i.select('.figure')[0]['data-float']
+                page_pattern = re.compile(r'x/page/(.+).html')
+                cover_pattern1 = re.compile(r'/x/cover/(.+)/(.+).html')
+                cover_pattern2 = re.compile(r'/x/cover/(.+).html')
+
+                cid = ''
+                vid = ''
+                if page_pattern.search(href):
+                    vid = page_pattern.findall(href)[0]
+                elif cover_pattern1.search(href):
+                    cid, vid = cover_pattern1.findall(href)[0]
+                elif cover_pattern2.search(href):
+                    cid = cover_pattern2.findall(href)[0]
+
                 score = i.select('.figure_score')[0].text.strip() if i.select('.figure_score') else ''
                 title = i.select('.figure_title')[0]['title'] if i.select('.figure_title') else ''
                 cover_tag = i.select('.figure_pic')[0]
@@ -80,7 +92,8 @@ class TencentVideo:
                 if cover.startswith('//'):
                     cover = 'https:' + cover
                 v_lists.append({
-                    'cid': vid,
+                    'cid': cid,
+                    'vid': vid,
                     'title': title,
                     'caption': caption,
                     'score': score,
@@ -133,7 +146,6 @@ class TencentVideo:
         :param channel:     频道对应的字符串
         :return:
         """
-
 
         # 变量声明
         params = []  # 所有可用筛选
@@ -188,7 +200,6 @@ class TencentVideo:
         :return:
         """
 
-
         url = self.LIST_API.format(channel=channel, offset=offset)
         rs = do_get(url, params)
         lists = self.pc_parse_list(rs)
@@ -224,9 +235,9 @@ class TencentVideo:
             play_count = '0'  # 播放量
 
             title = item.select('.figure_title')[0]['title']
-            desc = item.select('.figure_desc')[0]['title']
+            desc = item.select('.figure_desc')[0]['title'] if item.select('.figure_desc') else ''
             cover = item.select('.figure_pic')[0]['src']
-            caption = item.select('.figure_caption')[0].text
+            caption = item.select('.figure_caption')[0].text if item.select('.figure_caption') else ''
 
             if item.select('.mark_v_VIP'):
                 is_vip = True
@@ -274,15 +285,14 @@ class TencentVideo:
             })
         return video_list
 
-    def pc_list_video_detail(self, cid):
+    def pc_list_video_detail_from_cid(self, cid):
         """
         根据cid查询影片详细信息
         :param cid:
         :return:
         """
 
-
-        url = self.VIDEO_INFO_API.format(cid=cid, time=int(time.time() * 1000))
+        url = self.VIDEO_INFO_CID_API.format(cid=cid, time=int(time.time() * 1000))
         rs = do_get(url, is_json=True)
         if 'c' not in rs:
             return False
@@ -327,14 +337,22 @@ class TencentVideo:
         caption = rs['rec'] if 'rec' in rs else ''
         return VideoDetail(cid, title, desc, episodes, cover, names, caption)
 
+    def pc_list_video_detail_from_vid(self, vid):
+        rs = do_get(self.VIDEO_INFO_VID_API.format(ids=vid, time=int(time.time())), call_back='QZOutputJson')
+        results = json.loads(rs)['results'][0]
+        cid = results['fields']['cover_list'][0]
+        # title = results['fields']['title']
+        return {
+            'cid': cid
+        }
+        pass
+
     def pc_list_video_episodes(self, cids):
         """
         根据cid查询所有分集
         :param cids:    带查询cid，多个以,分割
         :return:
         """
-
-        
 
         results = []
         rs = do_get(self.EPISODES_API.format(ids=cids), call_back='QZOutputJson')
@@ -352,7 +370,6 @@ class TencentVideo:
         :param count:   推荐数量
         :return:
         """
-        
 
         results = {
             'source': cid,

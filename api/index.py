@@ -23,13 +23,18 @@ def list_channel_index(channel: str):
 
 
 @app.get("/api/pc/list/channels/{channel}")
-def list_channel_videos(channel: str, offset=10):
+def list_channel_videos(channel: str, offset=0):
     return ten.pc_list_channel_videos(channel, offset)
 
 
 @app.get("/api/pc/list/video/{cid}")
 def list_video_detail(cid: str):
-    return ten.pc_list_video_detail(cid)
+    return ten.pc_list_video_detail_from_cid(cid)
+
+
+@app.get("/api/pc/list/cid/{vid}")
+def list_cid(vid: str):
+    return ten.pc_list_video_detail_from_vid(vid)
 
 
 @app.get("/api/pc/list/episodes/{cids}")
