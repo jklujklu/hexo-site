@@ -7,37 +7,37 @@ app = FastAPI()
 ten = TencentVideo()
 
 
-@app.get("/")
+@app.get("/api/")
 def read_root():
     return {"Hello": "World"}
 
 
-@app.get("/pc/list/channels")
+@app.get("/api/pc/list/channels")
 def list_channels():
     return ten.pc_list_channels()
 
 
-@app.get("/pc/list/index/{channel}")
+@app.get("/api/pc/list/index/{channel}")
 def list_channel_index(channel: str):
     return ten.pc_list_channel_index(channel)
 
 
-@app.get("/pc/list/channels/{channel}")
+@app.get("/api/pc/list/channels/{channel}")
 def list_channel_videos(channel: str, offset=10):
     return ten.pc_list_channel_videos(channel, offset)
 
 
-@app.get("/pc/list/video/{cid}")
+@app.get("/api/pc/list/video/{cid}")
 def list_video_detail(cid: str):
     return ten.pc_list_video_detail(cid)
 
 
-@app.get("/pc/list/episodes/{cids}")
+@app.get("/api/pc/list/episodes/{cids}")
 def list_video_detail(cids: str):
     return ten.pc_list_video_episodes(cids)
 
 
-@app.get("/pc/list/related/{cid}")
+@app.get("/api/pc/list/related/{cid}")
 def list_video_related(cid: str, count=10):
     return ten.pc_list_related_videos(cid, count=count)
 
