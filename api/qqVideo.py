@@ -328,7 +328,7 @@ class TencentVideo:
                     else:
                         for l in temp_list:
                             temp['groupDetail'].append({
-                                'vid': vid,
+                                'vid': l,
                                 'cid': cid,
                                 'title': '',
                                 'pic': '',
