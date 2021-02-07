@@ -310,21 +310,31 @@ class TencentVideo:
         }
         temp_list = []
         if len(video_ids) == 1:
-            temp['groupDetail'].append({
-                'vid': video_ids[0],
-                'num': 1
-            })
+            temp['groupDetail'] = self.pc_list_video_detail_from_vid(','.join(temp_list)).data
             temp.update({
                 'groupName': ''
             })
             episodes.append(temp)
         else:
             count = 0
+            is_first = True
             for vid in video_ids:
                 temp_list.append(vid)
                 count += 1
                 if count % 10 == 0 or count == len(video_ids):
-                    temp['groupDetail'] = self.pc_list_video_detail_from_vid(','.join(temp_list)).data
+                    if is_first:
+                        temp['groupDetail'] = self.pc_list_video_detail_from_vid(','.join(temp_list)).data
+                        is_first = False
+                    else:
+                        for l in temp_list:
+                            temp['groupDetail'].append({
+                                'vid': vid,
+                                'cid': cid,
+                                'title': '',
+                                'pic': '',
+                                'desc': '',
+                                'num': ''
+                            })
                     # vid_group = '{}-{}'.format((count - 1) // 10 * 10 + 1, count)
                     temp.update({
                         'groupName': '{}-{}'.format((count - 1) // 10 * 10 + 1, count)
