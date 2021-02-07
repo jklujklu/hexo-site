@@ -308,7 +308,7 @@ class TencentVideo:
         temp = {
             'groupDetail': []
         }
-
+        temp_list = []
         if len(video_ids) == 1:
             temp['groupDetail'].append({
                 'vid': video_ids[0],
@@ -321,20 +321,19 @@ class TencentVideo:
         else:
             count = 0
             for vid in video_ids:
-                temp['groupDetail'].append({
-                    'vid': vid,
-                    'num': count + 1
-                })
+                temp_list.append(vid)
                 count += 1
                 if count % 10 == 0 or count == len(video_ids):
-                    vid_group = '{}-{}'.format((count - 1) // 10 * 10 + 1, count)
+                    temp['groupDetail'] = self.pc_list_video_detail_from_vid(','.join(temp_list)).data
+                    # vid_group = '{}-{}'.format((count - 1) // 10 * 10 + 1, count)
                     temp.update({
-                        'groupName': vid_group
+                        'groupName': '{}-{}'.format((count - 1) // 10 * 10 + 1, count)
                     })
                     episodes.append(temp)
                     temp = {
                         'groupDetail': []
                     }
+                    temp_list = []
 
         cover = rs['c']['pic']
         names = rs['nam'][0] if len(rs['nam']) != 0 else []
@@ -343,13 +342,25 @@ class TencentVideo:
 
     def pc_list_video_detail_from_vid(self, vid):
         rs = do_get(self.VIDEO_INFO_VID_API.format(ids=vid, time=int(time.time())), call_back='QZOutputJson')
-        results = json.loads(rs)['results'][0]
-        cid = results['fields']['cover_list'][0]
-        # title = results['fields']['title']
-        return {
-            'cid': cid
-        }
-        pass
+        print(rs)
+        results = json.loads(rs)['results']
+        temp = []
+        for r in results:
+            vid = r['id']
+            cid = r['fields']['cover_list'][0]
+            pic = r['fields']['pic160x90']
+            desc = r['fields']['desc']
+            num = r['fields']['series_part_title']
+            title = r['fields']['title']
+            temp.append({
+                'vid': vid,
+                'cid': cid,
+                'title': title,
+                'pic': pic,
+                'desc': desc,
+                'num': num
+            })
+        return BaseResponse(temp)
 
     def pc_list_video_episodes(self, cids):
         """
