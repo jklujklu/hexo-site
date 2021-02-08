@@ -7,6 +7,7 @@ app = FastAPI()
 ten = TencentVideo()
 
 
+
 @app.get("/api/")
 def read_root():
     return {"Hello": "World"}
@@ -33,8 +34,8 @@ def list_video_detail(cid: str):
 
 
 @app.get("/api/pc/list/cid/{vid}")
-def list_cid(vid: str):
-    return ten.pc_list_video_detail_from_vid(vid)
+def list_cid(vid: str, group_name=''):
+    return ten.pc_list_video_detail_from_vid(vid, group_name)
 
 
 @app.get("/api/pc/list/episodes/{cids}")
@@ -46,10 +47,11 @@ def list_video_detail(cids: str):
 def list_video_related(cid: str, count=10):
     return ten.pc_list_related_videos(cid, count=count)
 
+
 @app.get("/api/pc/list/player/{vid}")
 def list_video_player_url(vid: str):
     return ten.pc_list_player_url(vid)
 
 
 if __name__ == '__main__':
-    uvicorn.run(app=app, host="127.0.0.1", port=8000)
+    uvicorn.run(app=app, host="0.0.0.0", port=8000)

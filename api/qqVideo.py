@@ -21,6 +21,12 @@ class TencentVideo:
                          '&appkey=6c03bbe9658448a4&union_platform=1&idlist={ids}&_={time}'
     PLAYER_URL_API = 'http://47.100.56.99:8000/pc/list/player/{vid}'
 
+    SEARCH_WORD_API = 'https://s.video.qq.com/smartbox?plat=2&ver=0&num={count}&otype=json&query={word}&_={time}'
+    SEARCH = 'https://v.qq.com/x/search/?q={key}'
+
+    INTENT_SEARCH_API = 'https://pbaccess.video.qq.com/trpc.videosearch.search_cgi.http/load_intent_list_info?' \
+                        'pageContext=query%3D{word}%26boxType%3Dintent%26intentId%3D3%26pageSize%3D{pageSize}' \
+                        '&pageNum={page}&query={word}'
     MOBILE_API = 'https://m.v.qq.com/x/m/channel/figure/{channel}?pagelet=1&refreshContext=&request=figure&isPagelet=1'
 
     def __init__(self):
@@ -310,7 +316,7 @@ class TencentVideo:
         }
         temp_list = []
         if len(video_ids) == 1:
-            temp['groupDetail'] = self.pc_list_video_detail_from_vid(','.join(temp_list)).data
+            temp = self.pc_list_video_detail_from_vid(','.join(video_ids))
             temp.update({
                 'groupName': ''
             })
@@ -323,12 +329,12 @@ class TencentVideo:
                 count += 1
                 if count % 10 == 0 or count == len(video_ids):
                     if is_first:
-                        temp['groupDetail'] = self.pc_list_video_detail_from_vid(','.join(temp_list)).data
+                        temp = self.pc_list_video_detail_from_vid(','.join(temp_list))
                         is_first = False
                     else:
                         for l in temp_list:
                             temp['groupDetail'].append({
-                                'vid': vid,
+                                'vid': l,
                                 'cid': cid,
                                 'title': '',
                                 'pic': '',
@@ -345,19 +351,19 @@ class TencentVideo:
                     }
                     temp_list = []
 
-        cover = rs['c']['pic']
+        cover = rs['c']['pic'] if 'pic' in rs['c'] else ''
         names = rs['nam'][0] if len(rs['nam']) != 0 else []
         caption = rs['rec'] if 'rec' in rs else ''
         return VideoDetail(cid, title, desc, episodes, cover, names, caption)
 
-    def pc_list_video_detail_from_vid(self, vid):
+    def pc_list_video_detail_from_vid(self, vid, group_name=''):
         rs = do_get(self.VIDEO_INFO_VID_API.format(ids=vid, time=int(time.time())), call_back='QZOutputJson')
         print(rs)
         results = json.loads(rs)['results']
         temp = []
         for r in results:
             vid = r['id']
-            cid = r['fields']['cover_list'][0]
+            cid = r['fields']['cover_list'][0] if len(r['fields']['cover_list']) != 0 else []
             pic = r['fields']['pic160x90']
             desc = r['fields']['desc']
             num = r['fields']['series_part_title']
@@ -370,7 +376,10 @@ class TencentVideo:
                 'desc': desc,
                 'num': num
             })
-        return BaseResponse(temp)
+        return {
+            'groupName': group_name,
+            'groupDetail': temp
+        }
 
     def pc_list_video_episodes(self, cids):
         """
@@ -420,6 +429,100 @@ class TencentVideo:
                 'status': status
             })
         return results
+
+    def pc_list_search_word(self, word, count=10):
+        rs = do_get(self.SEARCH_WORD_API.format(word=word, count=count, time=int(time.time() * 1000)),
+                    call_back='QZOutputJson')
+        items = json.loads(rs)['item']
+        for item in items:
+            word = item['word']
+            print(word)
+
+    def pc_list_search(self, key):
+        def parse_people(html):
+            results = {
+                'success': True,
+                'data': []
+            }
+            dom = BeautifulSoup(html, 'html.parser')
+            people_wrapper = dom.select('.result_people')
+            if people_wrapper:
+                avatar = people_wrapper[0].select('.people_avatar img')[0]['src']
+                name = people_wrapper[0].select('.people_name')[0].text
+                results.update({
+                    'avatar': avatar,
+                    'name': name
+                })
+                url = people_wrapper[0].select('a')[0]['href']
+                new_html = do_get(url, params={'tabid': 1})
+                dom = BeautifulSoup(new_html, 'html.parser')
+                rows = dom.select('.mod_row_box')
+                for row in rows:
+                    if not row.select('.mod_title'):
+                        continue
+                    lists = []
+
+                    title = row.select('.mod_title')[0].text
+                    num = row.select('.num')[0].text
+                    items = row.select('.list_item')
+                    for item in items:
+                        cover = item.select('.figure_pic')[0]['src']
+                        i_title = item.select('.figure')[0]['title']
+                        url = item.select('.figure')[0]['href']
+                        print(url)
+                        pattern = re.compile(r'/cover/(.+).html')
+                        if not pattern.search(url):
+                            continue
+                        cid = pattern.findall(url)[0]
+                        caption = item.select('.figure_count')[0].text if item.select('.figure_count') else ''
+                        lists.append({
+                            'cid': cid,
+                            'vid': '',
+                            'cover': cover,
+                            'caption': caption,
+                            'title': i_title
+                        })
+                    if len(lists) != 0:
+                        results['data'].append({
+                            'tag': title,
+                            'num': num,
+                            'list': lists
+                        })
+            else:
+                results['success'] = False
+            print(json.dumps(results))
+
+        def parse_no_template(html):
+            dom = BeautifulSoup(html, 'html.parser')
+            divs = dom.select('.wrapper_main div[data-index]')
+            print(len(divs))
+            print(html)
+            for div in divs:
+                cid = div.select('.result_item_v')[0]['data-id']
+                title = div.select('.result_title')[0].text.replace('\n', '').replace('\t', '')
+                cover = div.select('.figure_pic')[0]['src']
+                v_type = div.select('.type')[0].text.strip()
+                title = title.replace(v_type, '')
+                print(cid, title, cover, v_type)
+
+        def parse_intent(html, word, page=0, page_size=30):
+            dom = BeautifulSoup(html, 'html.parser')
+            if dom.select('.result_intention'):
+                rs_json = do_get(self.INTENT_SEARCH_API.format(word=word, page=page, pageSize=page_size), is_json=True)
+                items = rs_json['data']['areaBoxList'][0]['itemList']
+                for item in items:
+                    vid = item['doc']['id']
+                    title = item['videoInfo']['title']
+                    _type = item['videoInfo']['typeName']
+                    cover = item['videoInfo']['imgUrl']
+                    desc = item['videoInfo']['descrip']
+                    print(vid, title, _type, cover, desc)
+
+        rs = do_get(self.SEARCH.format(key=key))
+        # parse_people(rs)
+        # parse_no_template(rs)
+        parse_intent(rs, key)
+
 
 if __name__ == '__main__':
     a = TencentVideo().pc_list_player_url('p00355b45iu')
