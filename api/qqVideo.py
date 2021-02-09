@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from api.bean.channel import Channel
 from api.bean.response import BaseResponse
 from api.bean.videodetail import VideoDetail, VideoEpisode
-from api.utils.httpUtils import do_get
+from api.utils.httpUtils import do_get, check_url
 
 
 class TencentVideo:
@@ -22,7 +22,7 @@ class TencentVideo:
     PLAYER_URL_API = 'http://47.100.56.99:8000/pc/list/player/{vid}'
 
     SEARCH_WORD_API = 'https://s.video.qq.com/smartbox?plat=2&ver=0&num={count}&otype=json&query={word}&_={time}'
-    SEARCH = 'https://v.qq.com/x/search/?q={key}'
+    SEARCH = 'https://v.qq.com/x/search/?q={key}&cur={page}'
 
     INTENT_SEARCH_API = 'https://pbaccess.video.qq.com/trpc.videosearch.search_cgi.http/load_intent_list_info?' \
                         'pageContext=query%3D{word}%26boxType%3Dintent%26intentId%3D3%26pageSize%3D{pageSize}' \
@@ -431,28 +431,35 @@ class TencentVideo:
         return results
 
     def pc_list_search_word(self, word, count=10):
+        results = {
+            'data': []
+        }
         rs = do_get(self.SEARCH_WORD_API.format(word=word, count=count, time=int(time.time() * 1000)),
                     call_back='QZOutputJson')
         items = json.loads(rs)['item']
         for item in items:
             word = item['word']
-            print(word)
+            results['data'].append(word)
+        return results
 
-    def pc_list_search(self, key):
+    def pc_list_search(self, key, cur=1, is_intent=False):
         def parse_people(html):
             results = {
                 'success': True,
+                'type': 'people',
+                'avatar': '',
+                'name': '',
+                'hasNext': False,
                 'data': []
             }
             dom = BeautifulSoup(html, 'html.parser')
             people_wrapper = dom.select('.result_people')
             if people_wrapper:
                 avatar = people_wrapper[0].select('.people_avatar img')[0]['src']
+                avatar = check_url(avatar)
                 name = people_wrapper[0].select('.people_name')[0].text
-                results.update({
-                    'avatar': avatar,
-                    'name': name
-                })
+                results['avatar'] = avatar
+                results['name'] = name
                 url = people_wrapper[0].select('a')[0]['href']
                 new_html = do_get(url, params={'tabid': 1})
                 dom = BeautifulSoup(new_html, 'html.parser')
@@ -460,69 +467,112 @@ class TencentVideo:
                 for row in rows:
                     if not row.select('.mod_title'):
                         continue
-                    lists = []
-
-                    title = row.select('.mod_title')[0].text
-                    num = row.select('.num')[0].text
+                    tag = row.select('.mod_title')[0].contents[0].strip()
                     items = row.select('.list_item')
                     for item in items:
                         cover = item.select('.figure_pic')[0]['src']
+                        cover = check_url(cover)
                         i_title = item.select('.figure')[0]['title']
                         url = item.select('.figure')[0]['href']
-                        print(url)
                         pattern = re.compile(r'/cover/(.+).html')
                         if not pattern.search(url):
                             continue
                         cid = pattern.findall(url)[0]
                         caption = item.select('.figure_count')[0].text if item.select('.figure_count') else ''
-                        lists.append({
+                        results['data'].append({
                             'cid': cid,
-                            'vid': '',
                             'cover': cover,
+                            'tag': tag,
                             'caption': caption,
                             'title': i_title
                         })
-                    if len(lists) != 0:
-                        results['data'].append({
-                            'tag': title,
-                            'num': num,
-                            'list': lists
-                        })
             else:
                 results['success'] = False
-            print(json.dumps(results))
+            return results
 
-        def parse_no_template(html):
+        def parse_normal(html):
+            results = {
+                'success': True,
+                'type': 'no_template',
+                'hasNext': True,
+                'data': []
+            }
             dom = BeautifulSoup(html, 'html.parser')
             divs = dom.select('.wrapper_main div[data-index]')
-            print(len(divs))
-            print(html)
-            for div in divs:
-                cid = div.select('.result_item_v')[0]['data-id']
-                title = div.select('.result_title')[0].text.replace('\n', '').replace('\t', '')
-                cover = div.select('.figure_pic')[0]['src']
-                v_type = div.select('.type')[0].text.strip()
-                title = title.replace(v_type, '')
-                print(cid, title, cover, v_type)
+            if len(divs) != 0:
+                for div in divs:
+                    cid = div.select('.result_item_v')[0]['data-id']
+                    title = div.select('.result_title')[0].text.replace('\n', '').replace('\t', '')
+                    cover = div.select('.figure_pic')[0]['src']
+                    cover = check_url(cover)
+                    caption = div.select('.figure_caption')[0].text.strip() if len(
+                        div.select('.figure_caption')) != 0 else ''
+                    _type = div.select('.type')[0].text.strip()
+                    title = title.replace(_type, '')
+                    results['data'].append({
+                        'cid': cid,
+                        'title': title,
+                        'caption': caption,
+                        'tag': _type,
+                        'cover': cover
+                    })
+            else:
+                results['success'] = False
+                results['hasNext'] = False
+            return results
 
-        def parse_intent(html, word, page=0, page_size=30):
+        def parse_intent(html, word, page=0, page_size=10):
             dom = BeautifulSoup(html, 'html.parser')
+            result = {
+                'success': True,
+                'type': 'intent',
+                'hasNext': True,
+                'data': []
+            }
             if dom.select('.result_intention'):
                 rs_json = do_get(self.INTENT_SEARCH_API.format(word=word, page=page, pageSize=page_size), is_json=True)
                 items = rs_json['data']['areaBoxList'][0]['itemList']
                 for item in items:
-                    vid = item['doc']['id']
+                    cid = item['doc']['id']
                     title = item['videoInfo']['title']
+
+                    title = check(title)
                     _type = item['videoInfo']['typeName']
+                    _type = check(_type)
                     cover = item['videoInfo']['imgUrl']
-                    desc = item['videoInfo']['descrip']
-                    print(vid, title, _type, cover, desc)
+                    cover = check_url(cover)
+                    # desc = item['videoInfo']['descrip']
+                    result['data'].append({
+                        'cid': cid,
+                        'title': title,
+                        'caption': '',
+                        'tag': _type,
+                        'cover': cover
+                    })
+                if (page + 1) * page_size >= rs_json['data']['areaBoxList'][0]['totalNum']:
+                    result['hasNext'] = False
+            else:
+                result['success'] = False
+            return result
 
-        rs = do_get(self.SEARCH.format(key=key))
-        # parse_people(rs)
-        # parse_no_template(rs)
-        parse_intent(rs, key)
+        def check(txt):
+            m = '\u0005'
+            n = '\u0006'
+            return txt.replace(m, '').replace(n, '')
 
+        if is_intent:
+            rs = do_get(self.SEARCH.format(key=key, page=1))
+        else:
+            rs = do_get(self.SEARCH.format(key=key, page=cur))
+        people = parse_people(rs)
+        videos = parse_normal(rs)
+        intent = parse_intent(rs, key, page=cur - 1)
+        if people['success']:
+            return people
+        elif intent['success']:
+            return intent
+        else:
+            return videos
 
 if __name__ == '__main__':
     a = TencentVideo().pc_list_player_url('p00355b45iu')

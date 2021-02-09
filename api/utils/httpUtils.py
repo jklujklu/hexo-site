@@ -42,3 +42,10 @@ def str_2_jar(cookies_str):
 
 def dict_2_jar(cookies_dict):
     return cookiejar_from_dict(cookies_dict)
+
+
+def check_url(url):
+    if url.startswith('//'):
+        return 'https:' + url
+    elif url.startswith('http'):
+        return url

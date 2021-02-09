@@ -7,7 +7,6 @@ app = FastAPI()
 ten = TencentVideo()
 
 
-
 @app.get("/api/")
 def read_root():
     return {"Hello": "World"}
@@ -51,6 +50,21 @@ def list_video_related(cid: str, count=10):
 @app.get("/api/pc/list/player/{vid}")
 def list_video_player_url(vid: str):
     return ten.pc_list_player_url(vid)
+
+
+@app.get("/api/pc/list/word/{key}")
+def list_search_word(key: str):
+    return ten.pc_list_search_word(key)
+
+
+@app.get("/api/pc/list/search/{key}")
+def list_search_results(key: str, page=1, mode=''):
+    if mode == 'intent':
+        is_intent = True
+    else:
+        is_intent = False
+    return ten.\
+        pc_list_search(key, cur=int(page), is_intent=is_intent)
 
 
 if __name__ == '__main__':
