@@ -14,11 +14,11 @@ autoplay: false
 
 # 默认音乐（随机播放）
 mp3: 
-    - https://link.hhtjim.com/163/5308028.mp3
-    - https://link.hhtjim.com/163/31654479.mp3
-    - https://link.hhtjim.com/163/1594220.mp3
-    - https://link.hhtjim.com/163/31654455.mp3
-    - https://link.hhtjim.com/163/28953875.mp3
+    - https://music.163.com/song/media/outer/url?id=5268176.mp3
+    - https://music.163.com/song/media/outer/url?id=4468098.mp3
+    - https://music.163.com/song/media/outer/url?id=20744788.mp3
+    - https://music.163.com/song/media/outer/url?id=427606780.mp3
+    - https://music.163.com/song/media/outer/url?id=29030272.mp3
 # 首页封面图, 为空时取文章的cover作为封面(注意跨域问题,建议使用同源图片)
 welcome_cover: /img/background/1.jpg
 
@@ -80,7 +80,7 @@ hitokoto: true
 
 # 链接(可选:facebook,twitter,github,wechat,email)
 links:
-    qq: tencent://message/?uin=2065155193
+    # qq: tencent://message/?uin=2065155193
     zhihu: https://www.zhihu.com/people/jklujklu
     github: https://github.com/jklujklu
     wechat: /img/wechat.png
@@ -89,7 +89,7 @@ links:
 # 备案
 beian: 
     # 是否显示备案信息
-    enable: true
+    enable: false
     # 是否在主页面最底下显示备案信息(虽然丑，但是完全满足规定要求)
     enableFooter: false
     # 备案号
